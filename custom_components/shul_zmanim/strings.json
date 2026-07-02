@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Shul Zmanim",
+        "description": "Paste the link to your Google Sheet. First share it as \"Anyone with the link → Viewer\" (Share button, top right of the sheet).",
+        "data": {
+          "sheet_url": "Google Sheet URL",
+          "name": "Name"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "That doesn't look like a Google Sheets URL.",
+      "cannot_connect": "Couldn't reach the sheet. Make sure it's shared as \"Anyone with the link → Viewer\".",
+      "missing_columns": "The sheet is missing required columns (DayOrder, DayLabel, ZmanName, Time)."
+    },
+    "abort": {
+      "already_configured": "This sheet is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Shul Zmanim Options",
+        "data": {
+          "scan_interval": "Poll interval (minutes)"
+        }
+      }
+    }
+  }
+}
