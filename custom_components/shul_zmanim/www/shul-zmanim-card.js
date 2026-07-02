@@ -76,10 +76,15 @@ class ShulZmanimCard extends HTMLElement {
 
     const content = sections.map((day) => this._renderDay(day, showNotes)).join("");
 
+    // Set the grid direction explicitly (can't use dir="auto" here: the inner
+    // elements carry their own dir, so the grid has no text of its own to
+    // auto-detect from). RTL makes multi-column day sections flow right-to-left
+    // for Hebrew, so the first day sits on the right.
+    const dir = this._overallDir(sections);
     root.innerHTML = `
       ${this._style()}
       <ha-card header="${this._escape(title)}">
-        <div class="content">${content}</div>
+        <div class="content" dir="${dir}">${content}</div>
       </ha-card>
     `;
   }
@@ -88,25 +93,52 @@ class ShulZmanimCard extends HTMLElement {
     const rows = (day.zmanim || []).map((z) => this._renderRow(z, showNotes)).join("");
     return `
       <div class="day">
-        <div class="day-label">${this._escape(day.day_label || "")}</div>
+        <div class="day-label" dir="auto">${this._escape(day.day_label || "")}</div>
         <div class="rows">${rows}</div>
       </div>
     `;
   }
 
   _renderRow(zman, showNotes) {
-    const highlight = /rebbi/i.test(zman.name || "");
+    const highlight = this._isHighlighted(zman.name || "");
     const notes =
-      showNotes && zman.notes ? `<div class="notes">${this._escape(zman.notes)}</div>` : "";
+      showNotes && zman.notes
+        ? `<div class="notes" dir="auto">${this._escape(zman.notes)}</div>`
+        : "";
+    // dir="auto" on each row/text element: Hebrew flows right-to-left (name on
+    // the right, time on the left), English stays left-to-right, per line.
     return `
-      <div class="row${highlight ? " highlight" : ""}">
+      <div class="row${highlight ? " highlight" : ""}" dir="auto">
         <div class="name-wrap">
           <span class="name">${this._escape(zman.name || "")}</span>
           ${notes}
         </div>
-        <span class="time">${this._escape(zman.time || "")}</span>
+        <span class="time" dir="ltr">${this._escape(zman.time || "")}</span>
       </div>
     `;
+  }
+
+  _overallDir(sections) {
+    // Right-to-left if any day label or zman name contains a Hebrew character.
+    const hebrew = /[\u0590-\u05FF]/;
+    const hasHebrew = sections.some(
+      (day) =>
+        hebrew.test(day.day_label || "") ||
+        (day.zmanim || []).some((z) => hebrew.test(z.name || ""))
+    );
+    return hasHebrew ? "rtl" : "ltr";
+  }
+
+  _isHighlighted(name) {
+    // Comma-separated keywords; a zman whose name contains any of them is
+    // emphasized (e.g. "Rebbi davening for the amud"). Defaults to "rebbi";
+    // set `highlight:` in the card config for Hebrew or other terms.
+    const raw = this._config.highlight ?? "rebbi";
+    const keywords = String(raw)
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean);
+    return keywords.some((k) => name.toLowerCase().includes(k.toLowerCase()));
   }
 
   _escape(value) {

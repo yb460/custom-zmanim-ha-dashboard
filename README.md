@@ -114,11 +114,31 @@ entity: sensor.shul_zmanim
 title: This Week's Zmanim   # overrides the WeekTitle from the sheet
 max_days: 3                 # cap how many day-sections are shown
 show_notes: true            # set false to hide the Notes column
+highlight: rebbi            # comma-separated keywords to emphasize (see below)
 ```
 
 The card's custom element (`shul-zmanim-card.js`) is registered automatically
 when the integration loads — you shouldn't need to add a Lovelace resource
 manually.
+
+### Hebrew / right-to-left
+
+You can type your zman names and day labels in **Hebrew** — the card detects it
+and renders right-to-left automatically (day sections flow right-to-left, and
+each row shows the name on the right with the time on the left, the way the
+printed luach reads). English stays left-to-right, and a sheet mixing both is
+handled line by line. Times themselves always stay left-to-right so digits like
+`8:07` read correctly.
+
+### Highlighting a row (e.g. "Rebbi davening for the amud")
+
+Any zman whose name contains a highlight keyword is emphasized (bold, accent
+color). The default keyword is `rebbi`. To highlight Hebrew terms instead, set
+your own comma-separated keywords:
+
+```yaml
+highlight: רבי,עמוד,rebbi
+```
 
 ## Updating the sheet each week
 
