@@ -50,47 +50,50 @@ the integration's **Configure** button in Home Assistant).
 
 One row per zman. The header row must contain exactly these column names:
 
-| Column      | Purpose                                                                 |
-|-------------|--------------------------------------------------------------------------|
-| `WeekTitle` | Repeated on every row. Shown as the card's title, e.g. `Parshas Balak`. |
-| `DayOrder`  | Number controlling day order: `0` = Erev, `1` = Day 1, `2` = Day 2...   |
-| `DayLabel`  | Section heading shown on the card, e.g. `Erev Shabbos`, `Yom Tov Day 1`. |
-| `ZmanOrder` | Number controlling row order within a day (rows can be typed in any order). |
-| `ZmanName`  | e.g. `Candle Lighting`, `Mincha`, `Rebbi Davening for the Amud`.        |
-| `Time`      | Free text, e.g. `8:12 PM`. Shown exactly as typed.                     |
-| `Notes`     | Optional small note under the row, e.g. `Followed by Kiddush`.         |
+| Column   | Required? | Purpose                                                          |
+|----------|-----------|-------------------------------------------------------------------|
+| `Day`    | Yes       | Section heading, e.g. `Erev Shabbos`, `Yom Tov Day 1`.            |
+| `Zman`   | Yes       | e.g. `Candle Lighting`, `Mincha`, `Rebbi Davening for the Amud`.  |
+| `Time`   | Yes       | Free text, e.g. `8:12 PM`. Shown exactly as typed.                |
+| `Notes`  | Optional  | Small note under the row, e.g. `Followed by Kiddush`.             |
+| `WeekTitle` | Optional | Fill in on just one row (e.g. the first). Shown as the card's title, e.g. `Parshas Balak`. Leave blank if you don't want a title. |
+
+That's it — **no order columns to fill in.** The order you type rows in is
+the order they're shown in: the first time a new `Day` value appears sets
+that day's position, and rows are listed within a day in the order you typed
+them. Just type top-to-bottom the same way you'd read the WhatsApp image.
 
 **Rows for "the Rebbi is davening for the amud"** are just a normal row with
-that as the `ZmanName` — the card automatically highlights any row whose name
+that as the `Zman` — the card automatically highlights any row whose name
 contains "Rebbi". Just add the row on weeks it applies, and skip it on weeks
 it doesn't.
 
 A day's section on the dashboard is simply "every row that shares the same
-`DayOrder`" — so 1-day weeks, 2-day Yom Tov, and 3-day Yom Tov (e.g. Friday
+`Day` text" — so 1-day weeks, 2-day Yom Tov, and 3-day Yom Tov (e.g. Friday
 into a 2-day Yom Tov) all work automatically, with no configuration change.
 
 ### Example — a normal single-day Shabbos week
 
-| WeekTitle     | DayOrder | DayLabel      | ZmanOrder | ZmanName                    | Time    | Notes |
-|---------------|----------|---------------|-----------|------------------------------|---------|-------|
-| Parshas Balak | 0        | Erev Shabbos  | 1         | Candle Lighting              | 8:12 PM |       |
-| Parshas Balak | 0        | Erev Shabbos  | 2         | Mincha / Kabbalas Shabbos    | 8:00 PM |       |
-| Parshas Balak | 1        | Shabbos Day   | 1         | Shacharis                    | 9:00 AM |       |
-| Parshas Balak | 1        | Shabbos Day   | 2         | Mincha                       | 7:45 PM |       |
-| Parshas Balak | 1        | Shabbos Day   | 3         | Shabbos Ends                 | 9:15 PM |       |
+| Day          | Zman                        | Time    | Notes | WeekTitle     |
+|--------------|-------------------------------|---------|-------|---------------|
+| Erev Shabbos | Candle Lighting                | 8:12 PM |       | Parshas Balak |
+| Erev Shabbos | Mincha / Kabbalas Shabbos       | 8:00 PM |       |               |
+| Shabbos Day  | Shacharis                       | 9:00 AM |       |               |
+| Shabbos Day  | Mincha                          | 7:45 PM |       |               |
+| Shabbos Day  | Shabbos Ends                    | 9:15 PM |       |               |
 
 ### Example — 2-day Yom Tov, Rebbi davens only on Day 1
 
-| WeekTitle | DayOrder | DayLabel      | ZmanOrder | ZmanName                     | Time    | Notes         |
-|-----------|----------|---------------|-----------|-------------------------------|---------|---------------|
-| Shavuos   | 0        | Erev Yom Tov  | 1         | Candle Lighting                | 8:15 PM |               |
-| Shavuos   | 0        | Erev Yom Tov  | 2         | Mincha                         | 8:00 PM |               |
-| Shavuos   | 1        | Yom Tov Day 1 | 1         | Shacharis                      | 9:00 AM |               |
-| Shavuos   | 1        | Yom Tov Day 1 | 2         | Rebbi Davening for the Amud    |         | at Shacharis  |
-| Shavuos   | 1        | Yom Tov Day 1 | 3         | Mincha                         | 7:50 PM |               |
-| Shavuos   | 2        | Yom Tov Day 2 | 1         | Shacharis                      | 9:00 AM |               |
-| Shavuos   | 2        | Yom Tov Day 2 | 2         | Mincha                         | 7:50 PM |               |
-| Shavuos   | 2        | Yom Tov Day 2 | 3         | Yom Tov Ends                   | 9:18 PM |               |
+| Day           | Zman                          | Time    | Notes        | WeekTitle |
+|---------------|--------------------------------|---------|--------------|-----------|
+| Erev Yom Tov  | Candle Lighting                 | 8:15 PM |              | Shavuos   |
+| Erev Yom Tov  | Mincha                          | 8:00 PM |              |           |
+| Yom Tov Day 1 | Shacharis                       | 9:00 AM |              |           |
+| Yom Tov Day 1 | Rebbi Davening for the Amud     |         | at Shacharis |           |
+| Yom Tov Day 1 | Mincha                          | 7:50 PM |              |           |
+| Yom Tov Day 2 | Shacharis                       | 9:00 AM |              |           |
+| Yom Tov Day 2 | Mincha                          | 7:50 PM |              |           |
+| Yom Tov Day 2 | Yom Tov Ends                    | 9:18 PM |              |           |
 
 ## Adding the card to your dashboard
 
@@ -134,8 +137,8 @@ finish typing.
   **JavaScript Module**, then reload the dashboard.
 - **"Couldn't reach the sheet" during setup**: double-check the sheet is
   shared as "Anyone with the link → Viewer", not restricted.
-- **"Missing required columns"**: the header row must contain `DayOrder`,
-  `DayLabel`, `ZmanName`, and `Time` exactly as spelled in the
+- **"Missing required columns"**: the header row must contain `Day`,
+  `Zman`, and `Time` exactly as spelled in the
   [Sheet schema](#sheet-schema) section.
 - **Reduce database size**: this entity's state changes weekly and has no
   useful history, so it's worth excluding from the recorder in your
@@ -150,6 +153,21 @@ finish typing.
 
 ## Roadmap
 
-- Automatic extraction of zmanim directly from the WhatsApp image (AI-based),
-  writing into the same sheet schema — no changes to this integration or
-  card will be needed when that ships, since both only ever read the sheet.
+Automatic extraction of zmanim directly from a WhatsApp-style image, instead
+of typing into the sheet by hand. Not yet built — still being designed.
+Constraints gathered so far:
+
+- **No Telegram**, and it can't depend on a specific person being logged into
+  their own Home Assistant — this integration is meant for other people to
+  use too, not just one person's personal setup. Likely direction: a generic
+  webhook/URL endpoint the integration exposes, which any user could point
+  their own phone's share-sheet automation at (e.g. iOS/Android Shortcuts),
+  independent of any particular messaging app or account.
+- **Possible alternative to full OCR-to-structured-data**: retain the actual
+  image (cropped/cleaned of irrelevant parts) rather than converting
+  everything to text — trades off against the card's resize/reflow
+  flexibility, since an image doesn't reflow as cleanly as text. Worth
+  weighing once this phase is picked back up.
+- Needs a paid AI vision API key (e.g. Anthropic) to do the actual
+  extraction — deferred until that's set up. Manual entry into the sheet
+  remains the supported path until then.

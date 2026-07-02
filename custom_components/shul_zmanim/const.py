@@ -13,7 +13,7 @@ DEFAULT_NAME = "Shul Zmanim"
 DEFAULT_SCAN_INTERVAL_MINUTES = 60
 MIN_SCAN_INTERVAL_MINUTES = 5
 
-REQUIRED_COLUMNS = ("DayOrder", "DayLabel", "ZmanName", "Time")
+REQUIRED_COLUMNS = ("Day", "Zman", "Time")
 
 PLATFORMS = [Platform.SENSOR, Platform.BUTTON]
 

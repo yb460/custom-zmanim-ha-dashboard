@@ -18,18 +18,13 @@ from .const import ATTR_SIZE_WARNING_BYTES, DOMAIN, REQUIRED_COLUMNS
 _LOGGER = logging.getLogger(__name__)
 
 
-def _safe_int(value: str | None, fallback: int) -> int:
-    try:
-        return int(str(value).strip())
-    except (TypeError, ValueError):
-        return fallback
-
-
 def parse_zmanim_csv(csv_text: str) -> dict[str, Any]:
     """Parse the sheet's CSV export into a day-grouped structure.
 
-    Individual malformed rows are skipped (and logged) rather than failing
-    the whole parse, so a single typo doesn't blank the dashboard.
+    Day and zman order both follow the order rows appear in the sheet -
+    no separate numeric order columns needed. Individual malformed rows
+    are skipped (and logged) rather than failing the whole parse, so a
+    single typo doesn't blank the dashboard.
     """
     reader = csv.DictReader(io.StringIO(csv_text))
 
@@ -40,41 +35,38 @@ def parse_zmanim_csv(csv_text: str) -> dict[str, Any]:
     if missing:
         raise ValueError(f"missing_columns: {', '.join(missing)}")
 
-    days: dict[int, dict[str, Any]] = {}
+    days: dict[str, dict[str, Any]] = {}
     week_title = ""
     row_count = 0
 
     for index, row in enumerate(reader):
-        if not week_title:
-            week_title = (row.get("WeekTitle") or "").strip()
+        week_title_cell = (row.get("WeekTitle") or "").strip()
+        if week_title_cell and not week_title:
+            week_title = week_title_cell
 
-        name = (row.get("ZmanName") or "").strip()
-        if not name:
-            _LOGGER.warning("Skipping row %s: missing ZmanName", index)
+        day_label = (row.get("Day") or "").strip()
+        zman_name = (row.get("Zman") or "").strip()
+        if not day_label or not zman_name:
+            _LOGGER.warning("Skipping row %s: missing Day or Zman", index)
             continue
 
-        day_order = _safe_int(row.get("DayOrder"), fallback=index)
         day = days.setdefault(
-            day_order,
+            day_label,
             {
-                "day_order": day_order,
-                "day_label": (row.get("DayLabel") or "").strip(),
+                "day_order": index,
+                "day_label": day_label,
                 "zmanim": [],
             },
         )
 
         day["zmanim"].append(
             {
-                "order": _safe_int(row.get("ZmanOrder"), fallback=len(day["zmanim"])),
-                "name": name,
+                "name": zman_name,
                 "time": (row.get("Time") or "").strip(),
                 "notes": (row.get("Notes") or "").strip(),
             }
         )
         row_count += 1
-
-    for day in days.values():
-        day["zmanim"].sort(key=lambda z: z["order"])
 
     sorted_days = sorted(days.values(), key=lambda d: d["day_order"])
 
