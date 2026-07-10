@@ -1,12 +1,17 @@
 name: Release
 
-# Publishes a GitHub Release automatically whenever a version tag (vX.Y.Z) is
-# pushed. That release is what HACS watches to show "update available", so the
-# whole update flow becomes: bump manifest.json version -> tag -> push tag.
+# Publishes a GitHub Release. HACS watches releases to show "update available",
+# so shipping an update is: bump manifest.json version, then either push a
+# vX.Y.Z tag or run this workflow manually with the tag as input.
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag to release, e.g. v1.0.1"
+        required: true
 
 permissions:
   contents: write
@@ -16,7 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Create GitHub release
+      - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            gh release create "$TAG" --target "${{ github.sha }}" --title "$TAG" --generate-notes
+          else
+            TAG="${GITHUB_REF_NAME}"
+            gh release create "$TAG" --title "$TAG" --generate-notes
+          fi
