@@ -43,8 +43,8 @@ within your configured poll interval (60 minutes by default, changeable from
 the integration's **Configure** button in Home Assistant).
 
 > **Privacy note:** "Anyone with the link" means anyone who has the link can
-> view the sheet. This is fine for zmanim times (nothing sensitive), but
-> don't put anything private in this sheet.
+> view the sheet. Keep the link unlisted (don't post it publicly) and don't put
+> anything private in the sheet. See [Privacy & location](#privacy--location).
 
 ## Sheet schema
 
@@ -170,6 +170,22 @@ finish typing.
       entities:
         - sensor.shul_zmanim
   ```
+
+## Privacy & location
+
+- **This repository contains no location, personal, or credential data.** The
+  integration never reads your Home Assistant location (latitude/longitude/
+  timezone) and stores nothing about where you are.
+- Your Google Sheet URL is entered inside Home Assistant at setup time and kept
+  in your local config — it is never committed to this repo or sent anywhere
+  except to Google to fetch the sheet.
+- The **only** thing that hints at your location is the zmanim *times* you type
+  into the sheet (candle-lighting/shabbos-end times imply an approximate
+  latitude and date). Those times live in your sheet and appear on your own
+  dashboard — they are not published by this integration. Since the sheet is
+  shared as "Anyone with the link", keep that link unlisted if you'd rather not
+  have the times inferable by strangers. (For most shuls this schedule is
+  posted publicly anyway, so this is usually a non-issue.)
 
 ## Roadmap
 

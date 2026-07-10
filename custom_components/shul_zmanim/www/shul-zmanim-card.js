@@ -142,9 +142,14 @@ class ShulZmanimCard extends HTMLElement {
   }
 
   _escape(value) {
-    const div = document.createElement("div");
-    div.textContent = String(value ?? "");
-    return div.innerHTML;
+    // Escape for both element-content AND attribute contexts (the title is
+    // rendered into header="..."), so quotes can't break out of an attribute.
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   _style() {
