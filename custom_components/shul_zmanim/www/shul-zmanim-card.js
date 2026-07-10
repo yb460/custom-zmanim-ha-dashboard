@@ -78,7 +78,8 @@ class ShulZmanimCard extends HTMLElement {
     const dir = this._overallDir(sections);
     const accent = this._config.accent_color || "var(--primary-color)";
     const header = title
-      ? `<div class="card-header" dir="auto">${this._escape(title)}</div>`
+      ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` +
+        `<div class="rule" aria-hidden="true"><i class="gem"></i></div>`
       : "";
 
     const inner =
@@ -112,7 +113,7 @@ class ShulZmanimCard extends HTMLElement {
 
     const iconName = showIcons ? this._iconFor(zman) : "";
     const icon = iconName
-      ? `<ha-icon class="zman-icon" icon="${this._escape(iconName)}"></ha-icon>`
+      ? `<span class="icon-chip"><ha-icon class="zman-icon" icon="${this._escape(iconName)}"></ha-icon></span>`
       : "";
     const time = zman.time
       ? `<span class="time" dir="ltr">${this._escape(zman.time)}</span>`
@@ -183,8 +184,8 @@ class ShulZmanimCard extends HTMLElement {
         .wrap {
           display: flex;
           flex-direction: column;
-          gap: 16px;
-          padding: 18px 16px 20px;
+          gap: 18px;
+          padding: 20px 16px 22px;
         }
         .empty {
           color: var(--secondary-text-color);
@@ -192,35 +193,79 @@ class ShulZmanimCard extends HTMLElement {
           text-align: center;
           padding: 8px 0;
         }
+
+        /* Title + elegant gold divider with a centered diamond. */
         .card-header {
           text-align: center;
-          font-size: 1.5rem;
+          font-size: 1.55rem;
           font-weight: 700;
           line-height: 1.2;
+          letter-spacing: 0.01em;
           color: var(--primary-text-color);
-          padding-bottom: 12px;
-          border-bottom: 3px double var(--divider-color);
           overflow-wrap: anywhere;
         }
+        .rule {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 10px;
+        }
+        .rule::before,
+        .rule::after {
+          content: "";
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(
+            to right,
+            transparent,
+            color-mix(in srgb, var(--accent) 60%, transparent)
+          );
+        }
+        .rule::after {
+          background: linear-gradient(
+            to left,
+            transparent,
+            color-mix(in srgb, var(--accent) 60%, transparent)
+          );
+        }
+        .gem {
+          flex: 0 0 auto;
+          width: 7px;
+          height: 7px;
+          transform: rotate(45deg);
+          background: var(--accent);
+          box-shadow: 0 0 7px color-mix(in srgb, var(--accent) 65%, transparent);
+        }
+
         .days {
           display: flex;
           flex-direction: column;
-          gap: 14px;
+          gap: 16px;
         }
 
-        /* Rounded translucent panel per day. */
+        /* Rounded panel per day with a soft gradient and gentle depth. */
         .day {
-          border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
-          background: color-mix(in srgb, var(--accent) 6%, transparent);
-          border-radius: 16px;
-          padding: 12px 14px;
+          border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+          border-radius: 18px;
+          padding: 14px 14px 10px;
+          background: linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--accent) 11%, transparent),
+            color-mix(in srgb, var(--accent) 3%, transparent)
+          );
+          box-shadow:
+            0 1px 3px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 color-mix(in srgb, var(--accent) 16%, transparent);
         }
         .day-label {
           text-align: center;
-          font-size: 1.05rem;
+          font-size: 1.08rem;
           font-weight: 700;
+          letter-spacing: 0.02em;
           color: var(--accent);
           margin-bottom: 8px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
           overflow-wrap: anywhere;
         }
 
@@ -229,15 +274,30 @@ class ShulZmanimCard extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 7px 4px;
+          padding: 8px 4px;
           border-radius: 10px;
         }
+        .entry + .entry {
+          border-top: 1px solid color-mix(in srgb, var(--divider-color) 45%, transparent);
+        }
+
+        /* Circular badge around each icon. */
+        .icon-chip {
+          flex: 0 0 auto;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: color-mix(in srgb, var(--accent) 14%, transparent);
+          border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+        }
         .zman-icon {
-          flex-shrink: 0;
           color: var(--accent);
           --mdc-icon-color: var(--accent);
-          width: 24px;
-          height: 24px;
+          width: 20px;
+          height: 20px;
         }
         .text {
           flex: 1 1 auto;
@@ -246,7 +306,7 @@ class ShulZmanimCard extends HTMLElement {
           flex-direction: column;
         }
         .name {
-          font-size: 1.02rem;
+          font-size: 1.03rem;
           font-weight: 500;
           color: var(--primary-text-color);
           overflow-wrap: anywhere;
@@ -259,7 +319,7 @@ class ShulZmanimCard extends HTMLElement {
         }
         .time {
           flex-shrink: 0;
-          font-size: 1.05rem;
+          font-size: 1.08rem;
           font-weight: 700;
           color: var(--primary-text-color);
           font-variant-numeric: tabular-nums;
@@ -269,6 +329,10 @@ class ShulZmanimCard extends HTMLElement {
         .entry.highlight {
           background: color-mix(in srgb, var(--accent) 16%, transparent);
         }
+        .entry.highlight .icon-chip {
+          background: color-mix(in srgb, var(--accent) 30%, transparent);
+          border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+        }
         .entry.highlight .name,
         .entry.highlight .time {
           color: var(--accent);
@@ -276,11 +340,12 @@ class ShulZmanimCard extends HTMLElement {
         }
 
         @container zmanim (max-width: 300px) {
-          .wrap { padding: 14px 12px 16px; gap: 12px; }
-          .card-header { font-size: 1.3rem; }
-          .day-label { font-size: 0.98rem; }
-          .name, .time { font-size: 0.95rem; }
-          .zman-icon { width: 21px; height: 21px; }
+          .wrap { padding: 16px 12px 18px; gap: 14px; }
+          .card-header { font-size: 1.32rem; }
+          .day-label { font-size: 1rem; }
+          .name, .time { font-size: 0.96rem; }
+          .icon-chip { width: 30px; height: 30px; }
+          .zman-icon { width: 18px; height: 18px; }
         }
       </style>
     `;
