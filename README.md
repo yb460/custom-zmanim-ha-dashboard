@@ -56,6 +56,7 @@ One row per zman. The header row must contain exactly these column names:
 | `Zman`   | Yes       | e.g. `Candle Lighting`, `Mincha`, `Rebbi Davening for the Amud`.  |
 | `Time`   | Yes       | Free text, e.g. `8:12 PM`. Shown exactly as typed.                |
 | `Notes`  | Optional  | Small note under the row, e.g. `Followed by Kiddush`.             |
+| `Icon`   | Optional  | Override the auto-picked icon for this row with any [Material Design Icon](https://pictogrammers.com/library/mdi/) name, e.g. `mdi:candle`. Leave blank to let the card choose. |
 | `WeekTitle` | Optional | Fill in on just one row (e.g. the first). Shown as the card's title, e.g. `Parshas Balak`. Leave blank if you don't want a title. |
 
 That's it — **no order columns to fill in.** The order you type rows in is
@@ -112,10 +113,21 @@ Optional card settings:
 type: custom:shul-zmanim-card
 entity: sensor.shul_zmanim
 title: This Week's Zmanim   # overrides the WeekTitle from the sheet
-max_days: 3                 # cap how many day-sections are shown
+accent_color: "#c9a24a"     # color of icons + day labels + panel borders (default: theme accent)
+show_icons: true            # set false to hide the per-row icons
 show_notes: true            # set false to hide the Notes column
+max_days: 3                 # cap how many day-sections are shown
+default_icon: mdi:clock-time-four-outline  # icon for rows nothing else matches
 highlight: rebbi            # comma-separated keywords to emphasize (see below)
 ```
+
+Each zman row automatically gets a fitting icon based on its name (candle for
+candle-lighting, sunrise for shacharis, a book for kri'as shema, a star for
+motzei shabbos, and so on — Hebrew and English). To force a specific icon on a
+row, put an [MDI name](https://pictogrammers.com/library/mdi/) in that row's
+`Icon` column in the sheet. Set `accent_color` to a warm gold like `#c9a24a`
+for a traditional luach look, or leave it out to follow your Home Assistant
+theme's accent color.
 
 The card's custom element (`shul-zmanim-card.js`) is registered automatically
 when the integration loads — you shouldn't need to add a Lovelace resource

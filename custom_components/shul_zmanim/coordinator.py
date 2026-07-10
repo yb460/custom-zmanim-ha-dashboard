@@ -64,6 +64,9 @@ def parse_zmanim_csv(csv_text: str) -> dict[str, Any]:
                 "name": zman_name,
                 "time": (row.get("Time") or "").strip(),
                 "notes": (row.get("Notes") or "").strip(),
+                # Optional per-row icon override (an mdi name like "mdi:candle").
+                # Blank is fine - the card auto-picks an icon from the name.
+                "icon": (row.get("Icon") or "").strip(),
             }
         )
         row_count += 1

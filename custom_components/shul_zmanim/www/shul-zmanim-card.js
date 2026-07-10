@@ -1,3 +1,23 @@
+const ICON_RULES = [
+  [/(הדלקת|נרות|candle)/i, "mdi:candle"],
+  [/(קבלת שבת|kabbal)/i, "mdi:candle"],
+  [/(עלות|alos|alot|dawn)/i, "mdi:weather-sunset-up"],
+  [/(הנץ|נץ|sunrise|netz|hanetz)/i, "mdi:weather-sunny"],
+  [/(שחרית|shachar)/i, "mdi:weather-sunset-up"],
+  [/(קריאת שמע|קרי"ש|קרי|shema|shma|krias)/i, "mdi:book-open-variant"],
+  [/(חצות|chatzos|chatzot)/i, "mdi:circle-half-full"],
+  [/(מנחה|mincha|minchah)/i, "mdi:weather-sunset-down"],
+  [/(שקיעה|shkia|shekia|sunset)/i, "mdi:weather-sunset"],
+  [/(מעריב|ערבית|maariv|arvis|arvit)/i, "mdi:weather-night"],
+  [/(מוצאי|motzei|motzoei|havdal|ends)/i, "mdi:star-david"],
+  [/(סעוד|seuda|seudah|meal)/i, "mdi:silverware-fork-knife"],
+  [/(שיעור|שיעורים|לימוד|תורה|torah|shiur|shiurim)/i, "mdi:book-open-page-variant"],
+  [/(אסיפ|כינוס|התוועד|gather|farbreng)/i, "mdi:account-group"],
+  [/(רבי|אדמו|admor|rebbe|rebbi)/i, "mdi:account-tie"],
+  [/(אוהח|אור החיים|ohr|ohc)/i, "mdi:book-open-variant"],
+  [/(שבת|shabbos|shabbat)/i, "mdi:star-david"],
+];
+
 class ShulZmanimCard extends HTMLElement {
   setConfig(config) {
     if (!config.entity) {
@@ -14,18 +34,11 @@ class ShulZmanimCard extends HTMLElement {
     this._render(hass.states[this._config.entity]);
   }
 
-  // Portrait footprint on HA "sections" dashboards: narrow columns, height
-  // sized to the content (some weeks are short, Yom Tov weeks are tall).
+  // Portrait footprint on HA "sections" dashboards: narrow, height fits content.
   getLayoutOptions() {
-    return {
-      grid_columns: 3,
-      grid_rows: "auto",
-      grid_min_columns: 2,
-    };
+    return { grid_columns: 3, grid_rows: "auto", grid_min_columns: 2 };
   }
 
-  // Rough size hint for masonry-view dashboards, scaled to how much content
-  // is actually being shown this week (1 day vs. 3 days of Yom Tov).
   getCardSize() {
     if (!this._lastSections) {
       return 4;
@@ -48,9 +61,7 @@ class ShulZmanimCard extends HTMLElement {
       this._lastSections = null;
       root.innerHTML = `
         ${this._style()}
-        <ha-card>
-          <div class="empty">Entity not found: ${this._escape(this._config.entity)}</div>
-        </ha-card>
+        <ha-card><div class="empty">Entity not found: ${this._escape(this._config.entity)}</div></ha-card>
       `;
       return;
     }
@@ -61,74 +72,82 @@ class ShulZmanimCard extends HTMLElement {
     const allDays = stateObj.attributes.days || [];
     const maxDays = this._config.max_days;
     const days = typeof maxDays === "number" ? allDays.slice(0, maxDays) : allDays;
-    const showNotes = this._config.show_notes !== false;
     const sections = days.filter((day) => (day.zmanim || []).length > 0);
     this._lastSections = sections;
 
     const dir = this._overallDir(sections);
+    const accent = this._config.accent_color || "var(--primary-color)";
+    const header = title
+      ? `<div class="card-header" dir="auto">${this._escape(title)}</div>`
+      : "";
 
-    if (sections.length === 0) {
-      root.innerHTML = `
-        ${this._style()}
-        <ha-card>
-          <div class="wrap" dir="${dir}">
-            ${title ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` : ""}
-            <div class="empty">No zmanim posted yet this week.</div>
-          </div>
-        </ha-card>
-      `;
-      return;
-    }
-
-    const body = sections.map((day) => this._renderDay(day, showNotes)).join("");
+    const inner =
+      sections.length === 0
+        ? `<div class="empty">No zmanim posted yet this week.</div>`
+        : `<div class="days">${sections.map((d) => this._renderDay(d)).join("")}</div>`;
 
     root.innerHTML = `
       ${this._style()}
       <ha-card>
-        <div class="wrap" dir="${dir}">
-          ${title ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` : ""}
-          <div class="days">${body}</div>
+        <div class="wrap" dir="${dir}" style="--accent:${this._escape(accent)}">
+          ${header}
+          ${inner}
         </div>
       </ha-card>
     `;
   }
 
-  _renderDay(day, showNotes) {
-    const rows = (day.zmanim || []).map((z) => this._renderRow(z, showNotes)).join("");
+  _renderDay(day) {
+    const rows = (day.zmanim || []).map((z) => this._renderRow(z)).join("");
     const label = day.day_label
-      ? `<div class="day-label" dir="auto"><span>${this._escape(day.day_label)}</span></div>`
+      ? `<div class="day-label" dir="auto">${this._escape(day.day_label)}</div>`
       : "";
-    return `
-      <section class="day">
-        ${label}
-        <div class="entries">${rows}</div>
-      </section>
-    `;
+    return `<section class="day">${label}<div class="entries">${rows}</div></section>`;
   }
 
-  _renderRow(zman, showNotes) {
+  _renderRow(zman) {
     const highlight = this._isHighlighted(zman.name || "");
+    const showNotes = this._config.show_notes !== false;
+    const showIcons = this._config.show_icons !== false;
+
+    const iconName = showIcons ? this._iconFor(zman) : "";
+    const icon = iconName
+      ? `<ha-icon class="zman-icon" icon="${this._escape(iconName)}"></ha-icon>`
+      : "";
     const time = zman.time
       ? `<span class="time" dir="ltr">${this._escape(zman.time)}</span>`
       : "";
     const notes =
       showNotes && zman.notes
-        ? `<div class="notes" dir="auto">${this._escape(zman.notes)}</div>`
+        ? `<span class="notes" dir="auto">${this._escape(zman.notes)}</span>`
         : "";
+
     return `
       <div class="entry${highlight ? " highlight" : ""}">
-        <div class="row">
+        ${icon}
+        <div class="text">
           <span class="name" dir="auto">${this._escape(zman.name || "")}</span>
-          <span class="leader" aria-hidden="true"></span>
-          ${time}
+          ${notes}
         </div>
-        ${notes}
+        ${time}
       </div>
     `;
   }
 
+  _iconFor(zman) {
+    if (zman.icon) {
+      return zman.icon; // explicit override from the sheet's Icon column
+    }
+    const name = zman.name || "";
+    for (const [re, icon] of ICON_RULES) {
+      if (re.test(name)) {
+        return icon;
+      }
+    }
+    return this._config.default_icon || "mdi:clock-time-four-outline";
+  }
+
   _overallDir(sections) {
-    // Right-to-left if any day label or zman name contains a Hebrew character.
     const hebrew = /[֐-׿]/;
     const hasHebrew = sections.some(
       (day) =>
@@ -139,18 +158,12 @@ class ShulZmanimCard extends HTMLElement {
   }
 
   _isHighlighted(name) {
-    // Comma-separated keywords; a zman whose name contains any of them is
-    // emphasized. Defaults to "rebbi"; set `highlight:` for Hebrew/other terms.
     const raw = this._config.highlight ?? "rebbi";
-    const keywords = String(raw)
-      .split(",")
-      .map((k) => k.trim())
-      .filter(Boolean);
+    const keywords = String(raw).split(",").map((k) => k.trim()).filter(Boolean);
     return keywords.some((k) => name.toLowerCase().includes(k.toLowerCase()));
   }
 
   _escape(value) {
-    // Safe for element-content AND attribute contexts (title goes into markup).
     return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -170,8 +183,8 @@ class ShulZmanimCard extends HTMLElement {
         .wrap {
           display: flex;
           flex-direction: column;
-          gap: 20px;
-          padding: 20px 18px 22px;
+          gap: 16px;
+          padding: 18px 16px 20px;
         }
         .empty {
           color: var(--secondary-text-color);
@@ -179,58 +192,58 @@ class ShulZmanimCard extends HTMLElement {
           text-align: center;
           padding: 8px 0;
         }
-
         .card-header {
           text-align: center;
-          font-size: 1.55rem;
+          font-size: 1.5rem;
           font-weight: 700;
           line-height: 1.2;
           color: var(--primary-text-color);
-          padding-bottom: 14px;
+          padding-bottom: 12px;
           border-bottom: 3px double var(--divider-color);
           overflow-wrap: anywhere;
         }
-
         .days {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 14px;
         }
 
-        /* Day heading centered between two rules, like a section divider. */
+        /* Rounded translucent panel per day. */
+        .day {
+          border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+          background: color-mix(in srgb, var(--accent) 6%, transparent);
+          border-radius: 16px;
+          padding: 12px 14px;
+        }
         .day-label {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 8px;
-        }
-        .day-label::before,
-        .day-label::after {
-          content: "";
-          flex: 1;
-          height: 1px;
-          background: var(--divider-color);
-        }
-        .day-label span {
-          font-size: 1.12rem;
+          text-align: center;
+          font-size: 1.05rem;
           font-weight: 700;
-          color: var(--primary-color);
-          white-space: nowrap;
+          color: var(--accent);
+          margin-bottom: 8px;
           overflow-wrap: anywhere;
         }
 
-        .entries {
-          display: flex;
-          flex-direction: column;
-        }
+        .entries { display: flex; flex-direction: column; }
         .entry {
-          padding: 7px 8px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 7px 4px;
           border-radius: 10px;
         }
-        .row {
+        .zman-icon {
+          flex-shrink: 0;
+          color: var(--accent);
+          --mdc-icon-color: var(--accent);
+          width: 24px;
+          height: 24px;
+        }
+        .text {
+          flex: 1 1 auto;
+          min-width: 0;
           display: flex;
-          align-items: baseline;
-          gap: 8px;
+          flex-direction: column;
         }
         .name {
           font-size: 1.02rem;
@@ -238,48 +251,36 @@ class ShulZmanimCard extends HTMLElement {
           color: var(--primary-text-color);
           overflow-wrap: anywhere;
         }
-        /* Dotted leader connecting the name to the time (luach style). */
-        .leader {
-          flex: 1 1 auto;
-          min-width: 14px;
-          align-self: flex-end;
-          transform: translateY(-4px);
-          border-bottom: 2px dotted var(--divider-color);
+        .notes {
+          font-size: 0.8rem;
+          color: var(--secondary-text-color);
+          margin-top: 1px;
+          overflow-wrap: anywhere;
         }
         .time {
+          flex-shrink: 0;
           font-size: 1.05rem;
           font-weight: 700;
           color: var(--primary-text-color);
           font-variant-numeric: tabular-nums;
           white-space: nowrap;
-          flex-shrink: 0;
-        }
-        .notes {
-          font-size: 0.82rem;
-          color: var(--secondary-text-color);
-          margin-top: 1px;
-          overflow-wrap: anywhere;
         }
 
-        /* Emphasize a highlighted row (e.g. "Rebbi davening for the amud"). */
         .entry.highlight {
-          background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+          background: color-mix(in srgb, var(--accent) 16%, transparent);
         }
         .entry.highlight .name,
         .entry.highlight .time {
-          color: var(--primary-color);
+          color: var(--accent);
           font-weight: 700;
         }
-        .entry.highlight .leader {
-          border-bottom-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
-        }
 
-        /* Tighten up on very narrow cards so nothing feels cramped. */
         @container zmanim (max-width: 300px) {
-          .wrap { padding: 16px 14px 18px; gap: 16px; }
-          .card-header { font-size: 1.35rem; }
-          .day-label span { font-size: 1.02rem; }
-          .name, .time { font-size: 0.96rem; }
+          .wrap { padding: 14px 12px 16px; gap: 12px; }
+          .card-header { font-size: 1.3rem; }
+          .day-label { font-size: 0.98rem; }
+          .name, .time { font-size: 0.95rem; }
+          .zman-icon { width: 21px; height: 21px; }
         }
       </style>
     `;
