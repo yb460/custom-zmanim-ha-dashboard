@@ -4,11 +4,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.http import StaticPathConfig
-from homeassistant.loader import async_get_integration
 
 from .const import (
     CARD_FILENAME,
@@ -45,15 +42,51 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
-    """Serve the bundled card JS and register it as an always-loaded frontend module."""
-    www_dir = Path(__file__).parent / "www"
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(CARD_URL_BASE, str(www_dir), cache_headers=False)]
-    )
+    """Serve the bundled card JS and auto-load it as a frontend module.
 
-    integration = await async_get_integration(hass, DOMAIN)
-    version = integration.version or "0"
-    add_extra_js_url(hass, f"{CARD_URL_BASE}/{CARD_FILENAME}?v={version}")
+    This is best-effort and deliberately non-fatal: the frontend/http APIs
+    have changed across Home Assistant versions, so any failure here must not
+    break integration setup. If it fails, the card still works once the user
+    adds the Lovelace resource manually (see the README troubleshooting note).
+    """
+    www_dir = str(Path(__file__).parent / "www")
+
+    try:
+        # HA 2024.7+: register via StaticPathConfig list API.
+        from homeassistant.components.http import StaticPathConfig
+
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(CARD_URL_BASE, www_dir, cache_headers=False)]
+        )
+    except ImportError:
+        # Older HA without StaticPathConfig: fall back to the legacy API.
+        try:
+            hass.http.register_static_path(CARD_URL_BASE, www_dir, cache_headers=False)
+        except Exception:  # noqa: BLE001 - never let this break setup
+            _LOGGER.warning(
+                "Could not serve the Shul Zmanim card automatically; add the "
+                "Lovelace resource manually (see README)."
+            )
+            return
+    except Exception:  # noqa: BLE001 - never let this break setup
+        _LOGGER.warning(
+            "Could not serve the Shul Zmanim card automatically; add the "
+            "Lovelace resource manually (see README)."
+        )
+        return
+
+    try:
+        from homeassistant.components.frontend import add_extra_js_url
+        from homeassistant.loader import async_get_integration
+
+        integration = await async_get_integration(hass, DOMAIN)
+        version = integration.version or "0"
+        add_extra_js_url(hass, f"{CARD_URL_BASE}/{CARD_FILENAME}?v={version}")
+    except Exception:  # noqa: BLE001 - never let this break setup
+        _LOGGER.warning(
+            "Could not auto-load the Shul Zmanim card module; add the Lovelace "
+            "resource manually (see README)."
+        )
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:

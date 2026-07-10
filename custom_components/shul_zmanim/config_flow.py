@@ -85,7 +85,9 @@ class ShulZmanimOptionsFlow(OptionsFlow):
     """Handle options (poll interval) for an existing entry."""
 
     def __init__(self, config_entry: ConfigEntry) -> None:
-        self.config_entry = config_entry
+        # Store privately; assigning to self.config_entry is deprecated in
+        # newer Home Assistant (the framework provides it automatically).
+        self._entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -97,7 +99,7 @@ class ShulZmanimOptionsFlow(OptionsFlow):
             {
                 vol.Optional(
                     CONF_SCAN_INTERVAL,
-                    default=self.config_entry.options.get(
+                    default=self._entry.options.get(
                         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
                     ),
                 ): vol.All(int, vol.Range(min=MIN_SCAN_INTERVAL_MINUTES)),
