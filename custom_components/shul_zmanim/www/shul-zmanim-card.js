@@ -14,14 +14,13 @@ class ShulZmanimCard extends HTMLElement {
     this._render(hass.states[this._config.entity]);
   }
 
-  // Lets HA's grid/"sections" dashboards offer resizing this card, with
-  // sensible defaults and a reasonable minimum so text stays readable.
+  // Portrait footprint on HA "sections" dashboards: narrow columns, height
+  // sized to the content (some weeks are short, Yom Tov weeks are tall).
   getLayoutOptions() {
     return {
-      grid_columns: 4,
-      grid_rows: 4,
+      grid_columns: 3,
+      grid_rows: "auto",
       grid_min_columns: 2,
-      grid_min_rows: 2,
     };
   }
 
@@ -29,13 +28,13 @@ class ShulZmanimCard extends HTMLElement {
   // is actually being shown this week (1 day vs. 3 days of Yom Tov).
   getCardSize() {
     if (!this._lastSections) {
-      return 3;
+      return 4;
     }
     const totalRows = this._lastSections.reduce(
       (sum, day) => sum + (day.zmanim || []).length,
       0
     );
-    return Math.max(2, 1 + Math.ceil((this._lastSections.length + totalRows) / 3));
+    return Math.max(3, 1 + this._lastSections.length + Math.ceil(totalRows / 2));
   }
 
   static getStubConfig() {
@@ -56,7 +55,9 @@ class ShulZmanimCard extends HTMLElement {
       return;
     }
 
-    const title = this._config.title || stateObj.attributes.friendly_name || stateObj.state;
+    const title =
+      this._config.title || stateObj.attributes.week_title ||
+      stateObj.attributes.friendly_name || stateObj.state;
     const allDays = stateObj.attributes.days || [];
     const maxDays = this._config.max_days;
     const days = typeof maxDays === "number" ? allDays.slice(0, maxDays) : allDays;
@@ -64,63 +65,71 @@ class ShulZmanimCard extends HTMLElement {
     const sections = days.filter((day) => (day.zmanim || []).length > 0);
     this._lastSections = sections;
 
+    const dir = this._overallDir(sections);
+
     if (sections.length === 0) {
       root.innerHTML = `
         ${this._style()}
-        <ha-card header="${this._escape(title)}">
-          <div class="empty">No zmanim posted yet this week.</div>
+        <ha-card>
+          <div class="wrap" dir="${dir}">
+            ${title ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` : ""}
+            <div class="empty">No zmanim posted yet this week.</div>
+          </div>
         </ha-card>
       `;
       return;
     }
 
-    const content = sections.map((day) => this._renderDay(day, showNotes)).join("");
+    const body = sections.map((day) => this._renderDay(day, showNotes)).join("");
 
-    // Set the grid direction explicitly (can't use dir="auto" here: the inner
-    // elements carry their own dir, so the grid has no text of its own to
-    // auto-detect from). RTL makes multi-column day sections flow right-to-left
-    // for Hebrew, so the first day sits on the right.
-    const dir = this._overallDir(sections);
     root.innerHTML = `
       ${this._style()}
-      <ha-card header="${this._escape(title)}">
-        <div class="content" dir="${dir}">${content}</div>
+      <ha-card>
+        <div class="wrap" dir="${dir}">
+          ${title ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` : ""}
+          <div class="days">${body}</div>
+        </div>
       </ha-card>
     `;
   }
 
   _renderDay(day, showNotes) {
     const rows = (day.zmanim || []).map((z) => this._renderRow(z, showNotes)).join("");
+    const label = day.day_label
+      ? `<div class="day-label" dir="auto"><span>${this._escape(day.day_label)}</span></div>`
+      : "";
     return `
-      <div class="day">
-        <div class="day-label" dir="auto">${this._escape(day.day_label || "")}</div>
-        <div class="rows">${rows}</div>
-      </div>
+      <section class="day">
+        ${label}
+        <div class="entries">${rows}</div>
+      </section>
     `;
   }
 
   _renderRow(zman, showNotes) {
     const highlight = this._isHighlighted(zman.name || "");
+    const time = zman.time
+      ? `<span class="time" dir="ltr">${this._escape(zman.time)}</span>`
+      : "";
     const notes =
       showNotes && zman.notes
         ? `<div class="notes" dir="auto">${this._escape(zman.notes)}</div>`
         : "";
-    // dir="auto" on each row/text element: Hebrew flows right-to-left (name on
-    // the right, time on the left), English stays left-to-right, per line.
     return `
-      <div class="row${highlight ? " highlight" : ""}" dir="auto">
-        <div class="name-wrap">
-          <span class="name">${this._escape(zman.name || "")}</span>
-          ${notes}
+      <div class="entry${highlight ? " highlight" : ""}">
+        <div class="row">
+          <span class="name" dir="auto">${this._escape(zman.name || "")}</span>
+          <span class="leader" aria-hidden="true"></span>
+          ${time}
         </div>
-        <span class="time" dir="ltr">${this._escape(zman.time || "")}</span>
+        ${notes}
       </div>
     `;
   }
 
   _overallDir(sections) {
     // Right-to-left if any day label or zman name contains a Hebrew character.
-    const hebrew = /[\u0590-\u05FF]/;
+    const hebrew = /[֐-׿]/;
     const hasHebrew = sections.some(
       (day) =>
         hebrew.test(day.day_label || "") ||
@@ -131,8 +140,7 @@ class ShulZmanimCard extends HTMLElement {
 
   _isHighlighted(name) {
     // Comma-separated keywords; a zman whose name contains any of them is
-    // emphasized (e.g. "Rebbi davening for the amud"). Defaults to "rebbi";
-    // set `highlight:` in the card config for Hebrew or other terms.
+    // emphasized. Defaults to "rebbi"; set `highlight:` for Hebrew/other terms.
     const raw = this._config.highlight ?? "rebbi";
     const keywords = String(raw)
       .split(",")
@@ -142,8 +150,7 @@ class ShulZmanimCard extends HTMLElement {
   }
 
   _escape(value) {
-    // Escape for both element-content AND attribute contexts (the title is
-    // rendered into header="..."), so quotes can't break out of an attribute.
+    // Safe for element-content AND attribute contexts (title goes into markup).
     return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -157,80 +164,122 @@ class ShulZmanimCard extends HTMLElement {
       <style>
         ha-card {
           container-type: inline-size;
-          container-name: shul-zmanim-card;
+          container-name: zmanim;
+          overflow: hidden;
         }
-        .content {
-          display: grid;
-          /* Day sections lay themselves out in as many columns as fit -
-             wide/resized cards show days side-by-side, narrow cards stack
-             to a single column. No JS/ResizeObserver needed. */
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px 24px;
-          padding: 0 16px 16px;
-          align-items: start;
+        .wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          padding: 20px 18px 22px;
         }
         .empty {
-          padding: 16px;
           color: var(--secondary-text-color);
           font-style: italic;
+          text-align: center;
+          padding: 8px 0;
         }
-        .day-label {
-          font-weight: 600;
-          font-size: 1.05rem;
+
+        .card-header {
+          text-align: center;
+          font-size: 1.55rem;
+          font-weight: 700;
+          line-height: 1.2;
           color: var(--primary-text-color);
-          border-bottom: 1px solid var(--divider-color);
-          padding-bottom: 4px;
-          margin-bottom: 6px;
+          padding-bottom: 14px;
+          border-bottom: 3px double var(--divider-color);
           overflow-wrap: anywhere;
+        }
+
+        .days {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        /* Day heading centered between two rules, like a section divider. */
+        .day-label {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 8px;
+        }
+        .day-label::before,
+        .day-label::after {
+          content: "";
+          flex: 1;
+          height: 1px;
+          background: var(--divider-color);
+        }
+        .day-label span {
+          font-size: 1.12rem;
+          font-weight: 700;
+          color: var(--primary-color);
+          white-space: nowrap;
+          overflow-wrap: anywhere;
+        }
+
+        .entries {
+          display: flex;
+          flex-direction: column;
+        }
+        .entry {
+          padding: 7px 8px;
+          border-radius: 10px;
         }
         .row {
           display: flex;
-          justify-content: space-between;
           align-items: baseline;
-          gap: 12px;
-          padding: 5px 0;
-          font-size: 0.95rem;
-        }
-        .row.highlight .name {
-          color: var(--primary-color);
-          font-weight: 600;
-        }
-        .name-wrap {
-          display: flex;
-          flex-direction: column;
-          min-width: 0;
+          gap: 8px;
         }
         .name {
+          font-size: 1.02rem;
+          font-weight: 500;
           color: var(--primary-text-color);
           overflow-wrap: anywhere;
         }
-        .notes {
-          font-size: 0.85em;
-          color: var(--secondary-text-color);
-          overflow-wrap: anywhere;
+        /* Dotted leader connecting the name to the time (luach style). */
+        .leader {
+          flex: 1 1 auto;
+          min-width: 14px;
+          align-self: flex-end;
+          transform: translateY(-4px);
+          border-bottom: 2px dotted var(--divider-color);
         }
         .time {
+          font-size: 1.05rem;
+          font-weight: 700;
           color: var(--primary-text-color);
-          white-space: nowrap;
           font-variant-numeric: tabular-nums;
+          white-space: nowrap;
           flex-shrink: 0;
         }
+        .notes {
+          font-size: 0.82rem;
+          color: var(--secondary-text-color);
+          margin-top: 1px;
+          overflow-wrap: anywhere;
+        }
 
-        /* When the card is resized very narrow (e.g. a small grid cell),
-           tighten spacing and font size a bit so text still fits cleanly
-           instead of wrapping awkwardly. */
-        @container shul-zmanim-card (max-width: 320px) {
-          .content {
-            grid-template-columns: 1fr;
-            gap: 12px;
-            padding: 0 12px 12px;
-          }
-          .day-label {
-            font-size: 0.95rem;
-          }
-          .row {
-            font-size: 0.88rem;
-          }
+        /* Emphasize a highlighted row (e.g. "Rebbi davening for the amud"). */
+        .entry.highlight {
+          background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+        }
+        .entry.highlight .name,
+        .entry.highlight .time {
+          color: var(--primary-color);
+          font-weight: 700;
+        }
+        .entry.highlight .leader {
+          border-bottom-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
+        }
+
+        /* Tighten up on very narrow cards so nothing feels cramped. */
+        @container zmanim (max-width: 300px) {
+          .wrap { padding: 16px 14px 18px; gap: 16px; }
+          .card-header { font-size: 1.35rem; }
+          .day-label span { font-size: 1.02rem; }
+          .name, .time { font-size: 0.96rem; }
         }
       </style>
     `;
