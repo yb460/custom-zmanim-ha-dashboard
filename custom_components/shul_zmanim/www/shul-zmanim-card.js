@@ -41,13 +41,13 @@ class ShulZmanimCard extends HTMLElement {
 
   getCardSize() {
     if (!this._lastSections) {
-      return 4;
+      return 3;
     }
     const totalRows = this._lastSections.reduce(
       (sum, day) => sum + (day.zmanim || []).length,
       0
     );
-    return Math.max(3, 1 + this._lastSections.length + Math.ceil(totalRows / 2));
+    return Math.max(2, Math.ceil((this._lastSections.length * 2 + totalRows) / 3));
   }
 
   static getStubConfig() {
@@ -184,22 +184,22 @@ class ShulZmanimCard extends HTMLElement {
         .wrap {
           display: flex;
           flex-direction: column;
-          gap: 18px;
-          padding: 20px 16px 22px;
+          gap: 8px;
+          padding: 10px 10px 11px;
         }
         .empty {
           color: var(--secondary-text-color);
           font-style: italic;
           text-align: center;
-          padding: 8px 0;
+          padding: 6px 0;
         }
 
-        /* Title + elegant gold divider with a centered diamond. */
+        /* Title + slim gold divider with a centered diamond. */
         .card-header {
           text-align: center;
-          font-size: 1.55rem;
+          font-size: 1.2rem;
           font-weight: 700;
-          line-height: 1.2;
+          line-height: 1.15;
           letter-spacing: 0.01em;
           color: var(--primary-text-color);
           overflow-wrap: anywhere;
@@ -207,8 +207,8 @@ class ShulZmanimCard extends HTMLElement {
         .rule {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-top: 10px;
+          gap: 8px;
+          margin-top: 4px;
         }
         .rule::before,
         .rule::after {
@@ -216,56 +216,50 @@ class ShulZmanimCard extends HTMLElement {
           flex: 1;
           height: 1px;
           background: linear-gradient(
-            to right,
-            transparent,
+            to right, transparent,
             color-mix(in srgb, var(--accent) 60%, transparent)
           );
         }
         .rule::after {
           background: linear-gradient(
-            to left,
-            transparent,
+            to left, transparent,
             color-mix(in srgb, var(--accent) 60%, transparent)
           );
         }
         .gem {
           flex: 0 0 auto;
-          width: 7px;
-          height: 7px;
+          width: 6px;
+          height: 6px;
           transform: rotate(45deg);
           background: var(--accent);
-          box-shadow: 0 0 7px color-mix(in srgb, var(--accent) 65%, transparent);
         }
 
         .days {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 8px;
         }
 
-        /* Rounded panel per day with a soft gradient and gentle depth. */
+        /* Rounded panel per day, compact. */
         .day {
           border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-          border-radius: 18px;
-          padding: 14px 14px 10px;
+          border-radius: 12px;
+          padding: 6px 10px 3px;
           background: linear-gradient(
             180deg,
-            color-mix(in srgb, var(--accent) 11%, transparent),
+            color-mix(in srgb, var(--accent) 10%, transparent),
             color-mix(in srgb, var(--accent) 3%, transparent)
           );
-          box-shadow:
-            0 1px 3px rgba(0, 0, 0, 0.12),
-            inset 0 1px 0 color-mix(in srgb, var(--accent) 16%, transparent);
         }
         .day-label {
           text-align: center;
-          font-size: 1.08rem;
+          font-size: 0.92rem;
           font-weight: 700;
           letter-spacing: 0.02em;
           color: var(--accent);
-          margin-bottom: 8px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+          margin-bottom: 3px;
+          padding-bottom: 3px;
+          border-bottom: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
           overflow-wrap: anywhere;
         }
 
@@ -273,31 +267,32 @@ class ShulZmanimCard extends HTMLElement {
         .entry {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 8px 4px;
-          border-radius: 10px;
+          gap: 9px;
+          padding: 3px 2px;
+          border-radius: 8px;
+          line-height: 1.15;
         }
         .entry + .entry {
-          border-top: 1px solid color-mix(in srgb, var(--divider-color) 45%, transparent);
+          border-top: 1px solid color-mix(in srgb, var(--divider-color) 40%, transparent);
         }
 
-        /* Circular badge around each icon. */
+        /* Compact circular icon badge. */
         .icon-chip {
           flex: 0 0 auto;
-          width: 34px;
-          height: 34px;
+          width: 26px;
+          height: 26px;
           border-radius: 50%;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           background: color-mix(in srgb, var(--accent) 14%, transparent);
-          border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+          border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
         }
         .zman-icon {
           color: var(--accent);
           --mdc-icon-color: var(--accent);
-          width: 20px;
-          height: 20px;
+          width: 16px;
+          height: 16px;
         }
         .text {
           flex: 1 1 auto;
@@ -306,20 +301,19 @@ class ShulZmanimCard extends HTMLElement {
           flex-direction: column;
         }
         .name {
-          font-size: 1.03rem;
+          font-size: 0.92rem;
           font-weight: 500;
           color: var(--primary-text-color);
           overflow-wrap: anywhere;
         }
         .notes {
-          font-size: 0.8rem;
+          font-size: 0.72rem;
           color: var(--secondary-text-color);
-          margin-top: 1px;
           overflow-wrap: anywhere;
         }
         .time {
           flex-shrink: 0;
-          font-size: 1.08rem;
+          font-size: 0.96rem;
           font-weight: 700;
           color: var(--primary-text-color);
           font-variant-numeric: tabular-nums;
@@ -339,13 +333,15 @@ class ShulZmanimCard extends HTMLElement {
           font-weight: 700;
         }
 
-        @container zmanim (max-width: 300px) {
-          .wrap { padding: 16px 12px 18px; gap: 14px; }
-          .card-header { font-size: 1.32rem; }
-          .day-label { font-size: 1rem; }
-          .name, .time { font-size: 0.96rem; }
-          .icon-chip { width: 30px; height: 30px; }
-          .zman-icon { width: 18px; height: 18px; }
+        @container zmanim (max-width: 290px) {
+          .card-header { font-size: 1.08rem; }
+          .day-label { font-size: 0.86rem; }
+          .name { font-size: 0.86rem; }
+          .time { font-size: 0.9rem; }
+          .notes { font-size: 0.68rem; }
+          .icon-chip { width: 23px; height: 23px; }
+          .zman-icon { width: 15px; height: 15px; }
+          .entry { gap: 7px; }
         }
       </style>
     `;
