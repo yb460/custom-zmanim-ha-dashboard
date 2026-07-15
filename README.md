@@ -112,14 +112,20 @@ Optional card settings:
 ```yaml
 type: custom:shul-zmanim-card
 entity: sensor.shul_zmanim
-title: This Week's Zmanim   # overrides the WeekTitle from the sheet
+title: This Week's Zmanim   # optional title; by default only the sheet's WeekTitle shows
+show_title: true            # set false to always hide the title/header
 accent_color: "#c9a24a"     # color of icons + day labels + panel borders (default: theme accent)
 show_icons: true            # set false to hide the per-row icons
+icon_size: 18               # icon size in px (default 18)
 show_notes: true            # set false to hide the Notes column
 max_days: 3                 # cap how many day-sections are shown
 default_icon: mdi:clock-time-four-outline  # icon for rows nothing else matches
 highlight: rebbi            # comma-separated keywords to emphasize (see below)
 ```
+
+The title/header only appears if the sheet has a `WeekTitle` (or you set
+`title:`) — it never shows the entity name. Leave `WeekTitle` blank for a
+clean, header-less card.
 
 Each zman row automatically gets a fitting icon based on its name (candle for
 candle-lighting, sunrise for shacharis, a book for kri'as shema, a star for

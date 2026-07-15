@@ -66,9 +66,10 @@ class ShulZmanimCard extends HTMLElement {
       return;
     }
 
-    const title =
-      this._config.title || stateObj.attributes.week_title ||
-      stateObj.attributes.friendly_name || stateObj.state;
+    // Only a real title from the sheet (WeekTitle) or config shows - never the
+    // entity name. Set `title:` to force one, or `show_title: false` to hide.
+    const title = this._config.title || stateObj.attributes.week_title || "";
+    const showTitle = this._config.show_title !== false;
     const allDays = stateObj.attributes.days || [];
     const maxDays = this._config.max_days;
     const days = typeof maxDays === "number" ? allDays.slice(0, maxDays) : allDays;
@@ -77,10 +78,12 @@ class ShulZmanimCard extends HTMLElement {
 
     const dir = this._overallDir(sections);
     const accent = this._config.accent_color || "var(--primary-color)";
-    const header = title
-      ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` +
-        `<div class="rule" aria-hidden="true"><i class="gem"></i></div>`
-      : "";
+    const iconSize = Number(this._config.icon_size) || 18;
+    const header =
+      showTitle && title
+        ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` +
+          `<div class="rule" aria-hidden="true"><i class="gem"></i></div>`
+        : "";
 
     const inner =
       sections.length === 0
@@ -90,7 +93,7 @@ class ShulZmanimCard extends HTMLElement {
     root.innerHTML = `
       ${this._style()}
       <ha-card>
-        <div class="wrap" dir="${dir}" style="--accent:${this._escape(accent)}">
+        <div class="wrap" dir="${dir}" style="--accent:${this._escape(accent)};--isize:${iconSize}px">
           ${header}
           ${inner}
         </div>
@@ -113,7 +116,7 @@ class ShulZmanimCard extends HTMLElement {
 
     const iconName = showIcons ? this._iconFor(zman) : "";
     const icon = iconName
-      ? `<span class="icon-chip"><ha-icon class="zman-icon" icon="${this._escape(iconName)}"></ha-icon></span>`
+      ? `<ha-icon class="zman-icon" icon="${this._escape(iconName)}"></ha-icon>`
       : "";
     const time = zman.time
       ? `<span class="time" dir="ltr">${this._escape(zman.time)}</span>`
@@ -276,23 +279,13 @@ class ShulZmanimCard extends HTMLElement {
           border-top: 1px solid color-mix(in srgb, var(--divider-color) 40%, transparent);
         }
 
-        /* Compact circular icon badge. */
-        .icon-chip {
-          flex: 0 0 auto;
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          background: color-mix(in srgb, var(--accent) 14%, transparent);
-          border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-        }
+        /* Clean gold icon, no heavy badge. */
         .zman-icon {
+          flex: 0 0 auto;
           color: var(--accent);
           --mdc-icon-color: var(--accent);
-          width: 16px;
-          height: 16px;
+          width: var(--isize);
+          height: var(--isize);
         }
         .text {
           flex: 1 1 auto;
@@ -323,10 +316,6 @@ class ShulZmanimCard extends HTMLElement {
         .entry.highlight {
           background: color-mix(in srgb, var(--accent) 16%, transparent);
         }
-        .entry.highlight .icon-chip {
-          background: color-mix(in srgb, var(--accent) 30%, transparent);
-          border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-        }
         .entry.highlight .name,
         .entry.highlight .time {
           color: var(--accent);
@@ -339,8 +328,6 @@ class ShulZmanimCard extends HTMLElement {
           .name { font-size: 0.86rem; }
           .time { font-size: 0.9rem; }
           .notes { font-size: 0.68rem; }
-          .icon-chip { width: 23px; height: 23px; }
-          .zman-icon { width: 15px; height: 15px; }
           .entry { gap: 7px; }
         }
       </style>
