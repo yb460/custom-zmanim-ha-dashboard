@@ -78,7 +78,7 @@ class ShulZmanimCard extends HTMLElement {
 
     const dir = this._overallDir(sections);
     const accent = this._config.accent_color || "var(--primary-color)";
-    const iconSize = Number(this._config.icon_size) || 18;
+    const iconSize = Number(this._config.icon_size) || 16;
     const header =
       showTitle && title
         ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` +
