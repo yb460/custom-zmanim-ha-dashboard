@@ -284,8 +284,10 @@ class ShulZmanimCard extends HTMLElement {
           flex: 0 0 auto;
           color: var(--accent);
           --mdc-icon-color: var(--accent);
+          --mdc-icon-size: var(--isize);
           width: var(--isize);
           height: var(--isize);
+          line-height: var(--isize);
         }
         .text {
           flex: 1 1 auto;
