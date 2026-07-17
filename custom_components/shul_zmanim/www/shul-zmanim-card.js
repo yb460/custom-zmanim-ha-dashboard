@@ -56,12 +56,13 @@ class ShulZmanimCard extends HTMLElement {
 
   _render(stateObj) {
     const root = this.shadowRoot;
+    const cardClass = this._config.preset === "amber" ? "amber" : "";
 
     if (!stateObj) {
       this._lastSections = null;
       root.innerHTML = `
         ${this._style()}
-        <ha-card><div class="empty">Entity not found: ${this._escape(this._config.entity)}</div></ha-card>
+        <ha-card class="${cardClass}"><div class="empty">Entity not found: ${this._escape(this._config.entity)}</div></ha-card>
       `;
       return;
     }
@@ -77,7 +78,9 @@ class ShulZmanimCard extends HTMLElement {
     this._lastSections = sections;
 
     const dir = this._overallDir(sections);
-    const accent = this._config.accent_color || "var(--primary-color)";
+    const accent =
+      this._config.accent_color ||
+      (cardClass === "amber" ? "#ffb74d" : "var(--primary-color)");
     const iconSize = Number(this._config.icon_size) || 16;
     const header =
       showTitle && title
@@ -92,7 +95,7 @@ class ShulZmanimCard extends HTMLElement {
 
     root.innerHTML = `
       ${this._style()}
-      <ha-card>
+      <ha-card class="${cardClass}">
         <div class="wrap" dir="${dir}" style="--accent:${this._escape(accent)};--isize:${iconSize}px">
           ${header}
           ${inner}
@@ -177,12 +180,43 @@ class ShulZmanimCard extends HTMLElement {
   }
 
   _style() {
+    const amber = this._config.preset === "amber";
+    const fontImport = amber
+      ? "@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&display=swap');"
+      : "";
     return `
       <style>
+        ${fontImport}
         ha-card {
           container-type: inline-size;
           container-name: zmanim;
           overflow: hidden;
+          position: relative;
+        }
+
+        /* "amber" preset: warm dark luach look with a glowing gold top line. */
+        ha-card.amber {
+          font-family: "Outfit", "Segoe UI", sans-serif;
+          background: linear-gradient(160deg, rgba(44, 36, 24, 0.94), rgba(20, 18, 16, 0.97));
+          border: 1px solid rgba(255, 183, 77, 0.18);
+          border-radius: 22px;
+          box-shadow:
+            0 8px 24px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+          --primary-text-color: #f0ebe0;
+          --secondary-text-color: rgba(240, 235, 224, 0.62);
+          --divider-color: rgba(255, 183, 77, 0.14);
+        }
+        ha-card.amber::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: linear-gradient(
+            90deg, transparent, rgba(255, 183, 77, 0.85), transparent
+          );
         }
         .wrap {
           display: flex;

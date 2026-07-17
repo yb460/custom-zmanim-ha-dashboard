@@ -112,6 +112,7 @@ Optional card settings:
 ```yaml
 type: custom:shul-zmanim-card
 entity: sensor.shul_zmanim
+preset: amber               # warm dark "luach" look (gold on dark) with a glowing top line
 title: This Week's Zmanim   # optional title; by default only the sheet's WeekTitle shows
 show_title: true            # set false to always hide the title/header
 accent_color: "#c9a24a"     # color of icons + day labels + panel borders (default: theme accent)
@@ -126,6 +127,12 @@ highlight: rebbi            # comma-separated keywords to emphasize (see below)
 The title/header only appears if the sheet has a `WeekTitle` (or you set
 `title:`) — it never shows the entity name. Leave `WeekTitle` blank for a
 clean, header-less card.
+
+**`preset: amber`** gives a self-contained warm dark "luach" theme — a
+brown-to-black gradient background, amber-gold icons and day labels, warm
+off-white text, rounded corners, and a glowing gold line across the top —
+regardless of your Home Assistant theme. Leave `preset` out to follow your HA
+theme's colors instead. (You can still override the gold with `accent_color`.)
 
 Each zman row automatically gets a fitting icon based on its name (candle for
 candle-lighting, sunrise for shacharis, a book for kri'as shema, a star for
