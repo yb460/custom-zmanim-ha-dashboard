@@ -18,6 +18,14 @@ const ICON_RULES = [
   [/(שבת|shabbos|shabbat)/i, "mdi:star-david"],
 ];
 
+// Optional Google fonts (all with good Hebrew coverage except Outfit).
+const FONTS = {
+  outfit: { family: "'Outfit', sans-serif", import: "family=Outfit:wght@500;600;700" },
+  rubik: { family: "'Rubik', sans-serif", import: "family=Rubik:wght@500;600;700" },
+  heebo: { family: "'Heebo', sans-serif", import: "family=Heebo:wght@500;600;700" },
+  assistant: { family: "'Assistant', sans-serif", import: "family=Assistant:wght@500;600;700" },
+};
+
 class ShulZmanimCard extends HTMLElement {
   setConfig(config) {
     if (!config.entity) {
@@ -34,7 +42,14 @@ class ShulZmanimCard extends HTMLElement {
     this._render(hass.states[this._config.entity]);
   }
 
-  // Portrait footprint on HA "sections" dashboards: narrow, height fits content.
+  static getConfigElement() {
+    return document.createElement("shul-zmanim-card-editor");
+  }
+
+  static getStubConfig() {
+    return { entity: "sensor.shul_zmanim" };
+  }
+
   getLayoutOptions() {
     return { grid_columns: 3, grid_rows: "auto", grid_min_columns: 2 };
   }
@@ -50,8 +65,8 @@ class ShulZmanimCard extends HTMLElement {
     return Math.max(2, Math.ceil((this._lastSections.length * 2 + totalRows) / 3));
   }
 
-  static getStubConfig() {
-    return { entity: "sensor.shul_zmanim" };
+  _fontKey() {
+    return this._config.font || (this._config.preset === "amber" ? "outfit" : "");
   }
 
   _render(stateObj) {
@@ -67,8 +82,6 @@ class ShulZmanimCard extends HTMLElement {
       return;
     }
 
-    // Only a real title from the sheet (WeekTitle) or config shows - never the
-    // entity name. Set `title:` to force one, or `show_title: false` to hide.
     const title = this._config.title || stateObj.attributes.week_title || "";
     const showTitle = this._config.show_title !== false;
     const allDays = stateObj.attributes.days || [];
@@ -82,6 +95,15 @@ class ShulZmanimCard extends HTMLElement {
       this._config.accent_color ||
       (cardClass === "amber" ? "#ffb74d" : "var(--primary-color)");
     const iconSize = Number(this._config.icon_size) || 16;
+
+    const fontKey = this._fontKey();
+    const fontFamily = FONTS[fontKey] ? FONTS[fontKey].family : "";
+    const fontSize = Number(this._config.font_size) || 0;
+
+    let wrapStyle = `--accent:${this._escape(accent)};--isize:${iconSize}px`;
+    if (fontFamily) wrapStyle += `;font-family:${fontFamily}`;
+    if (fontSize) wrapStyle += `;font-size:${fontSize}px`;
+
     const header =
       showTitle && title
         ? `<div class="card-header" dir="auto">${this._escape(title)}</div>` +
@@ -96,7 +118,7 @@ class ShulZmanimCard extends HTMLElement {
     root.innerHTML = `
       ${this._style()}
       <ha-card class="${cardClass}">
-        <div class="wrap" dir="${dir}" style="--accent:${this._escape(accent)};--isize:${iconSize}px">
+        <div class="wrap" dir="${dir}" style="${wrapStyle}">
           ${header}
           ${inner}
         </div>
@@ -143,7 +165,7 @@ class ShulZmanimCard extends HTMLElement {
 
   _iconFor(zman) {
     if (zman.icon) {
-      return zman.icon; // explicit override from the sheet's Icon column
+      return zman.icon;
     }
     const name = zman.name || "";
     for (const [re, icon] of ICON_RULES) {
@@ -180,9 +202,9 @@ class ShulZmanimCard extends HTMLElement {
   }
 
   _style() {
-    const amber = this._config.preset === "amber";
-    const fontImport = amber
-      ? "@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&display=swap');"
+    const fontKey = this._fontKey();
+    const fontImport = FONTS[fontKey]
+      ? `@import url('https://fonts.googleapis.com/css2?${FONTS[fontKey].import}&display=swap');`
       : "";
     return `
       <style>
@@ -196,7 +218,6 @@ class ShulZmanimCard extends HTMLElement {
 
         /* "amber" preset: warm dark luach look with a glowing gold top line. */
         ha-card.amber {
-          font-family: "Outfit", "Segoe UI", sans-serif;
           background: linear-gradient(160deg, rgba(44, 36, 24, 0.94), rgba(20, 18, 16, 0.97));
           border: 1px solid rgba(255, 183, 77, 0.18);
           border-radius: 22px;
@@ -210,19 +231,17 @@ class ShulZmanimCard extends HTMLElement {
         ha-card.amber::before {
           content: "";
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
+          top: 0; left: 0; right: 0;
           height: 2px;
-          background: linear-gradient(
-            90deg, transparent, rgba(255, 183, 77, 0.85), transparent
-          );
+          background: linear-gradient(90deg, transparent, rgba(255, 183, 77, 0.85), transparent);
         }
+
         .wrap {
           display: flex;
           flex-direction: column;
           gap: 8px;
           padding: 10px 10px 11px;
+          font-size: 1rem;
         }
         .empty {
           color: var(--secondary-text-color);
@@ -231,10 +250,10 @@ class ShulZmanimCard extends HTMLElement {
           padding: 6px 0;
         }
 
-        /* Title + slim gold divider with a centered diamond. */
+        /* Title + slim divider with a centered diamond. */
         .card-header {
           text-align: center;
-          font-size: 1.2rem;
+          font-size: 1.2em;
           font-weight: 700;
           line-height: 1.15;
           letter-spacing: 0.01em;
@@ -252,16 +271,10 @@ class ShulZmanimCard extends HTMLElement {
           content: "";
           flex: 1;
           height: 1px;
-          background: linear-gradient(
-            to right, transparent,
-            color-mix(in srgb, var(--accent) 60%, transparent)
-          );
+          background: linear-gradient(to right, transparent, color-mix(in srgb, var(--accent) 60%, transparent));
         }
         .rule::after {
-          background: linear-gradient(
-            to left, transparent,
-            color-mix(in srgb, var(--accent) 60%, transparent)
-          );
+          background: linear-gradient(to left, transparent, color-mix(in srgb, var(--accent) 60%, transparent));
         }
         .gem {
           flex: 0 0 auto;
@@ -277,7 +290,6 @@ class ShulZmanimCard extends HTMLElement {
           gap: 8px;
         }
 
-        /* Rounded panel per day, compact. */
         .day {
           border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
           border-radius: 12px;
@@ -290,7 +302,7 @@ class ShulZmanimCard extends HTMLElement {
         }
         .day-label {
           text-align: center;
-          font-size: 0.92rem;
+          font-size: 0.92em;
           font-weight: 700;
           letter-spacing: 0.02em;
           color: var(--accent);
@@ -313,7 +325,6 @@ class ShulZmanimCard extends HTMLElement {
           border-top: 1px solid color-mix(in srgb, var(--divider-color) 40%, transparent);
         }
 
-        /* Clean gold icon, no heavy badge. */
         .zman-icon {
           flex: 0 0 auto;
           color: var(--accent);
@@ -328,19 +339,19 @@ class ShulZmanimCard extends HTMLElement {
           flex-direction: column;
         }
         .name {
-          font-size: 0.92rem;
+          font-size: 0.92em;
           font-weight: 500;
           color: var(--primary-text-color);
           overflow-wrap: anywhere;
         }
         .notes {
-          font-size: 0.72rem;
+          font-size: 0.72em;
           color: var(--secondary-text-color);
           overflow-wrap: anywhere;
         }
         .time {
           flex-shrink: 0;
-          font-size: 0.96rem;
+          font-size: 0.96em;
           font-weight: 700;
           color: var(--primary-text-color);
           font-variant-numeric: tabular-nums;
@@ -357,11 +368,11 @@ class ShulZmanimCard extends HTMLElement {
         }
 
         @container zmanim (max-width: 290px) {
-          .card-header { font-size: 1.08rem; }
-          .day-label { font-size: 0.86rem; }
-          .name { font-size: 0.86rem; }
-          .time { font-size: 0.9rem; }
-          .notes { font-size: 0.68rem; }
+          .card-header { font-size: 1.08em; }
+          .day-label { font-size: 0.86em; }
+          .name { font-size: 0.86em; }
+          .time { font-size: 0.9em; }
+          .notes { font-size: 0.68em; }
           .entry { gap: 7px; }
         }
       </style>
@@ -371,9 +382,136 @@ class ShulZmanimCard extends HTMLElement {
 
 customElements.define("shul-zmanim-card", ShulZmanimCard);
 
+// --- Visual (UI) editor -----------------------------------------------------
+
+const EDITOR_LABELS = {
+  entity: "Entity",
+  title: "Title (optional)",
+  preset: "Color style",
+  accent_color: "Accent color (hex or blank)",
+  font: "Font",
+  font_size: "Font size",
+  icon_size: "Icon size",
+  max_days: "Max days shown (optional)",
+  highlight: "Highlight keywords",
+  show_title: "Show title",
+  show_icons: "Show icons",
+  show_notes: "Show notes",
+};
+
+class ShulZmanimCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = config;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  _schema() {
+    return [
+      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "title", selector: { text: {} } },
+      {
+        name: "preset",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "", label: "Follow HA theme" },
+              { value: "amber", label: "Amber (warm dark)" },
+            ],
+          },
+        },
+      },
+      { name: "accent_color", selector: { text: {} } },
+      {
+        name: "font",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "", label: "Default" },
+              { value: "outfit", label: "Outfit" },
+              { value: "rubik", label: "Rubik" },
+              { value: "heebo", label: "Heebo" },
+              { value: "assistant", label: "Assistant" },
+            ],
+          },
+        },
+      },
+      {
+        name: "font_size",
+        selector: { number: { min: 10, max: 28, step: 1, mode: "slider", unit_of_measurement: "px" } },
+      },
+      {
+        name: "icon_size",
+        selector: { number: { min: 10, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } },
+      },
+      {
+        name: "max_days",
+        selector: { number: { min: 1, max: 10, step: 1, mode: "box" } },
+      },
+      { name: "highlight", selector: { text: {} } },
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          { name: "show_title", selector: { boolean: {} } },
+          { name: "show_icons", selector: { boolean: {} } },
+          { name: "show_notes", selector: { boolean: {} } },
+        ],
+      },
+    ];
+  }
+
+  _render() {
+    if (!this._config || !this._hass) {
+      return;
+    }
+    if (!this._form) {
+      this._form = document.createElement("ha-form");
+      this._form.computeLabel = (s) => EDITOR_LABELS[s.name] || s.name;
+      this._form.addEventListener("value-changed", (ev) => this._valueChanged(ev));
+      this.appendChild(this._form);
+    }
+    // Defaults so the boolean switches show a sensible state.
+    this._form.hass = this._hass;
+    this._form.schema = this._schema();
+    this._form.data = {
+      show_title: true,
+      show_icons: true,
+      show_notes: true,
+      font_size: 16,
+      icon_size: 16,
+      ...this._config,
+    };
+  }
+
+  _valueChanged(ev) {
+    ev.stopPropagation();
+    const config = { ...ev.detail.value };
+    // Drop empties so the config stays clean.
+    for (const key of Object.keys(config)) {
+      if (config[key] === "" || config[key] === undefined || config[key] === null) {
+        delete config[key];
+      }
+    }
+    this.dispatchEvent(
+      new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true })
+    );
+  }
+}
+
+customElements.define("shul-zmanim-card-editor", ShulZmanimCardEditor);
+
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "shul-zmanim-card",
   name: "Shul Zmanim",
   description: "Displays this week's shul zmanim grouped by day.",
+  preview: true,
+  documentationURL: "https://github.com/yb460/custom-zmanim-ha-dashboard",
 });
