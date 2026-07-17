@@ -100,7 +100,19 @@ class ShulZmanimCard extends HTMLElement {
     const fontFamily = FONTS[fontKey] ? FONTS[fontKey].family : "";
     const fontSize = Number(this._config.font_size) || 0;
 
-    let wrapStyle = `--accent:${this._escape(accent)};--isize:${iconSize}px`;
+    // Per-element bold toggles and row spacing (all editable in the UI).
+    const fwHeader = (this._config.bold_header ?? true) ? "700" : "500";
+    const fwName = (this._config.bold_name ?? false) ? "700" : "500";
+    const fwTime = (this._config.bold_time ?? true) ? "700" : "400";
+    const fwNotes = (this._config.bold_notes ?? false) ? "700" : "400";
+    const rowPad = Number.isFinite(Number(this._config.row_spacing))
+      ? Number(this._config.row_spacing)
+      : 3;
+
+    let wrapStyle =
+      `--accent:${this._escape(accent)};--isize:${iconSize}px` +
+      `;--fw-header:${fwHeader};--fw-name:${fwName};--fw-time:${fwTime}` +
+      `;--fw-notes:${fwNotes};--rowpad:${rowPad}px`;
     if (fontFamily) wrapStyle += `;font-family:${fontFamily}`;
     if (fontSize) wrapStyle += `;font-size:${fontSize}px`;
 
@@ -254,7 +266,7 @@ class ShulZmanimCard extends HTMLElement {
         .card-header {
           text-align: center;
           font-size: 1.2em;
-          font-weight: 700;
+          font-weight: var(--fw-header, 700);
           line-height: 1.15;
           letter-spacing: 0.01em;
           color: var(--primary-text-color);
@@ -317,7 +329,7 @@ class ShulZmanimCard extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 9px;
-          padding: 3px 2px;
+          padding: var(--rowpad, 3px) 2px;
           border-radius: 8px;
           line-height: 1.15;
         }
@@ -340,19 +352,20 @@ class ShulZmanimCard extends HTMLElement {
         }
         .name {
           font-size: 0.92em;
-          font-weight: 500;
+          font-weight: var(--fw-name, 500);
           color: var(--primary-text-color);
           overflow-wrap: anywhere;
         }
         .notes {
           font-size: 0.72em;
+          font-weight: var(--fw-notes, 400);
           color: var(--secondary-text-color);
           overflow-wrap: anywhere;
         }
         .time {
           flex-shrink: 0;
           font-size: 0.96em;
-          font-weight: 700;
+          font-weight: var(--fw-time, 700);
           color: var(--primary-text-color);
           font-variant-numeric: tabular-nums;
           white-space: nowrap;
@@ -393,10 +406,15 @@ const EDITOR_LABELS = {
   font_size: "Font size",
   icon_size: "Icon size",
   max_days: "Max days shown (optional)",
+  row_spacing: "Row spacing",
   highlight: "Highlight keywords",
   show_title: "Show title",
   show_icons: "Show icons",
   show_notes: "Show notes",
+  bold_header: "Bold title",
+  bold_name: "Bold names",
+  bold_time: "Bold times",
+  bold_notes: "Bold notes",
 };
 
 class ShulZmanimCardEditor extends HTMLElement {
@@ -454,6 +472,10 @@ class ShulZmanimCardEditor extends HTMLElement {
         name: "max_days",
         selector: { number: { min: 1, max: 10, step: 1, mode: "box" } },
       },
+      {
+        name: "row_spacing",
+        selector: { number: { min: 0, max: 20, step: 1, mode: "slider", unit_of_measurement: "px" } },
+      },
       { name: "highlight", selector: { text: {} } },
       {
         type: "grid",
@@ -462,6 +484,10 @@ class ShulZmanimCardEditor extends HTMLElement {
           { name: "show_title", selector: { boolean: {} } },
           { name: "show_icons", selector: { boolean: {} } },
           { name: "show_notes", selector: { boolean: {} } },
+          { name: "bold_header", selector: { boolean: {} } },
+          { name: "bold_name", selector: { boolean: {} } },
+          { name: "bold_time", selector: { boolean: {} } },
+          { name: "bold_notes", selector: { boolean: {} } },
         ],
       },
     ];
@@ -484,8 +510,13 @@ class ShulZmanimCardEditor extends HTMLElement {
       show_title: true,
       show_icons: true,
       show_notes: true,
+      bold_header: true,
+      bold_name: false,
+      bold_time: true,
+      bold_notes: false,
       font_size: 16,
       icon_size: 16,
+      row_spacing: 3,
       ...this._config,
     };
   }
