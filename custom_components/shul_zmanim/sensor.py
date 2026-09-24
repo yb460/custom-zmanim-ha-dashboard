@@ -75,6 +75,12 @@ class ShulZmanimSensor(CoordinatorEntity[ShulZmanimCoordinator], SensorEntity):
         return {
             "days": self.coordinator.data.get("days", []),
             "row_count": self.coordinator.data.get("row_count", 0),
+            "removed_count": self.coordinator.data.get("removed_count", 0),
+            "next_removal": (
+                expiry.isoformat()
+                if (expiry := self.coordinator.data.get("next_expiry"))
+                else None
+            ),
             "last_updated": self.coordinator.data.get("last_updated"),
         }
 
