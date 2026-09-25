@@ -14,6 +14,9 @@ DEFAULT_SCAN_INTERVAL_MINUTES = 60
 MIN_SCAN_INTERVAL_MINUTES = 5
 
 REQUIRED_COLUMNS = ("Day", "Zman", "Time")
+# Optional column: once its date/time passes, the row is hidden. Matched
+# loosely, so "Remove By", "RemoveBy" and "remove_by" all work.
+REMOVE_BY_HEADER = "removeby"
 
 PLATFORMS = [Platform.SENSOR, Platform.BUTTON]
 

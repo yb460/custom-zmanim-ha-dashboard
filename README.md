@@ -59,6 +59,7 @@ One row per zman. The header row must contain exactly these column names:
 | `Icon`   | Optional  | Override the auto-picked icon for this row with any [Material Design Icon](https://pictogrammers.com/library/mdi/) name, e.g. `mdi:candle`. Leave blank to let the card choose. |
 | `Key`    | Optional  | Give a row a stable key (Latin letters/numbers/underscores, e.g. `shacharis`) to also expose it as its own sensor — see [Per-item sensors](#per-item-sensors). Leave blank for rows you don't need individually. |
 | `WeekTitle` | Optional | Fill in on just one row (e.g. the first). Shown as the card's title, e.g. `Parshas Balak`. Leave blank if you don't want a title. |
+| `Remove By` | Optional | A date or date-time, e.g. `9/28/2026` or `9/28/2026 8:10 PM`. Once it passes, the row is hidden automatically (right on time — no refresh needed). A date alone means "from the start of that day". Leave blank to keep the row until you delete it. |
 
 That's it — **no order columns to fill in.** The order you type rows in is
 the order they're shown in: the first time a new `Day` value appears sets
