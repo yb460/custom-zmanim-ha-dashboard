@@ -3,6 +3,7 @@
   "name": "Shul Zmanim",
   "codeowners": ["@yb460"],
   "config_flow": true,
+  "dependencies": ["http"],
   "documentation": "https://github.com/yb460/custom-zmanim-ha-dashboard",
   "integration_type": "service",
   "iot_class": "cloud_polling",
