@@ -197,6 +197,15 @@ the zman or reorder rows week to week. On a week where you don't include that
 row, the sensor simply goes *unavailable* (it isn't deleted), so cards
 referencing it don't break.
 
+Sensors for Keys that disappear for good don't pile up forever: the integration
+remembers the last date each Key was in the sheet, and once a Key has been
+absent for **4 weeks** its sensor is removed from Home Assistant. If the Key
+comes back later, the sensor is simply created again. Change the number of
+weeks (or set it to `0` to never remove anything) from the integration's
+**Configure** button. Sensors that existed before this feature was added start
+their 4 weeks from the first refresh after updating, so nothing is deleted
+right away.
+
 Rows without a `Key` are unchanged — they still appear in the card; they just
 don't get their own sensor. Use **Latin letters, numbers, and underscores** for
 predictable ids (a Hebrew key still works but gets transliterated into something

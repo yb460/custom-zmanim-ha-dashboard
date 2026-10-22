@@ -6,6 +6,7 @@ from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.storage import Store
 
 from .const import (
     CARD_FILENAME,
@@ -15,7 +16,7 @@ from .const import (
     DOMAIN,
     PLATFORMS,
 )
-from .coordinator import ShulZmanimCoordinator
+from .coordinator import STORAGE_VERSION, ShulZmanimCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +28,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     scan_interval = entry.options.get(
         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
     )
-    coordinator = ShulZmanimCoordinator(hass, entry.data["csv_url"], scan_interval)
+    coordinator = ShulZmanimCoordinator(
+        hass, entry.data["csv_url"], scan_interval, entry.entry_id
+    )
+    await coordinator.async_load_last_seen()
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
@@ -99,3 +103,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         coordinator: ShulZmanimCoordinator = hass.data[DOMAIN].pop(entry.entry_id)
         await coordinator.async_shutdown()
     return unloaded
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Delete the persisted last-seen dates when the integration is removed."""
+    await Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}.last_seen").async_remove()

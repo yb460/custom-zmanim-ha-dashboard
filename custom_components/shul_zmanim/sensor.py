@@ -1,17 +1,23 @@
 """Sensor platform for the Shul Zmanim integration."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+import homeassistant.util.dt as dt_util
 
-from .const import DOMAIN
+from .const import CONF_PRUNE_AFTER_WEEKS, DEFAULT_PRUNE_AFTER_WEEKS, DOMAIN
 from .coordinator import ShulZmanimCoordinator
+from .helpers import find_prunable_keys
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -27,15 +33,54 @@ async def async_setup_entry(
     created: set[str] = set()
 
     @callback
+    def _async_prune_item_sensors() -> None:
+        """Remove sensors whose Key hasn't been in the sheet for N weeks."""
+        weeks = entry.options.get(CONF_PRUNE_AFTER_WEEKS, DEFAULT_PRUNE_AFTER_WEEKS)
+        if weeks <= 0 or not coordinator.data:
+            return
+        registry = er.async_get(hass)
+        prefix = f"{entry.entry_id}_item_"
+        registered = {
+            reg.unique_id[len(prefix):]: reg.entity_id
+            for reg in er.async_entries_for_config_entry(registry, entry.entry_id)
+            if reg.domain == "sensor" and reg.unique_id.startswith(prefix)
+        }
+        to_prune, to_seed = find_prunable_keys(
+            registered,
+            coordinator.data.get("items", {}),
+            coordinator.last_seen,
+            dt_util.now().date(),
+            weeks * 7,
+        )
+        if not (to_prune or to_seed):
+            return
+        today = dt_util.now().date().isoformat()
+        for key in to_seed:
+            # Sensors that predate tracking (or have no usable date) start
+            # their grace period now rather than being deleted immediately.
+            coordinator.last_seen[key] = today
+        for key in to_prune:
+            _LOGGER.info(
+                "Removing sensor %s: Key '%s' not in the sheet since %s",
+                registered[key],
+                key,
+                coordinator.last_seen.get(key),
+            )
+            registry.async_remove(registered[key])
+            created.discard(key)
+            coordinator.last_seen.pop(key, None)
+        coordinator.async_save_last_seen()
+
+    @callback
     def _async_add_item_sensors() -> None:
         items = (coordinator.data or {}).get("items", {})
         new = [k for k in items if k not in created]
-        if not new:
-            return
-        created.update(new)
-        async_add_entities(
-            ShulZmanimItemSensor(coordinator, entry, key) for key in new
-        )
+        if new:
+            created.update(new)
+            async_add_entities(
+                ShulZmanimItemSensor(coordinator, entry, key) for key in new
+            )
+        _async_prune_item_sensors()
 
     _async_add_item_sensors()
     entry.async_on_unload(coordinator.async_add_listener(_async_add_item_sensors))

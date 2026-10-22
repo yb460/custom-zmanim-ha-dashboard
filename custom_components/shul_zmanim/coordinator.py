@@ -9,9 +9,10 @@ from typing import Any
 
 import aiohttp
 import homeassistant.util.dt as dt_util
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_point_in_time
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import slugify
 
@@ -19,6 +20,8 @@ from .const import ATTR_SIZE_WARNING_BYTES, DOMAIN, REMOVE_BY_HEADER, REQUIRED_C
 from .helpers import normalize_header, parse_remove_by
 
 _LOGGER = logging.getLogger(__name__)
+
+STORAGE_VERSION = 1
 
 
 def _local_tz():
@@ -140,7 +143,13 @@ def parse_zmanim_csv(csv_text: str, now: datetime | None = None) -> dict[str, An
 class ShulZmanimCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Fetches and parses the zmanim Google Sheet on a schedule."""
 
-    def __init__(self, hass: HomeAssistant, csv_url: str, update_interval_minutes: int) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        csv_url: str,
+        update_interval_minutes: int,
+        entry_id: str,
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
@@ -149,6 +158,38 @@ class ShulZmanimCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self._csv_url = csv_url
         self._unsub_expiry: CALLBACK_TYPE | None = None
+        # Key -> ISO date it was last present in the sheet. Persisted so the
+        # "not seen in N weeks" pruning survives restarts.
+        self._store: Store[dict[str, Any]] = Store(
+            hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.last_seen"
+        )
+        self.last_seen: dict[str, str] = {}
+
+    async def async_load_last_seen(self) -> None:
+        """Load persisted last-seen dates (call before the first refresh)."""
+        stored = await self._store.async_load()
+        if isinstance(stored, dict) and isinstance(stored.get("last_seen"), dict):
+            self.last_seen = {
+                k: v
+                for k, v in stored["last_seen"].items()
+                if isinstance(k, str) and isinstance(v, str)
+            }
+
+    @callback
+    def async_save_last_seen(self) -> None:
+        """Persist last-seen dates shortly after they change (debounced)."""
+        self._store.async_delay_save(lambda: {"last_seen": dict(self.last_seen)}, 10)
+
+    def _record_seen(self, items: dict[str, Any]) -> None:
+        """Stamp every Key present in the sheet with today's date."""
+        today = dt_util.now().date().isoformat()
+        changed = False
+        for key in items:
+            if self.last_seen.get(key) != today:
+                self.last_seen[key] = today
+                changed = True
+        if changed:
+            self.async_save_last_seen()
 
     def _schedule_expiry_refresh(self, when: datetime | None) -> None:
         """Re-parse the sheet the moment the next "Remove By" time passes."""
@@ -191,5 +232,6 @@ class ShulZmanimCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except ValueError as err:
             raise UpdateFailed(f"Error parsing zmanim sheet: {err}") from err
 
+        self._record_seen(data["items"])
         self._schedule_expiry_refresh(data["next_expiry"])
         return data

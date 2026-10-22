@@ -13,6 +13,11 @@ DEFAULT_NAME = "Shul Zmanim"
 DEFAULT_SCAN_INTERVAL_MINUTES = 60
 MIN_SCAN_INTERVAL_MINUTES = 5
 
+# Per-item sensors whose Key hasn't appeared in the sheet for this many weeks
+# are removed from the entity registry. 0 disables pruning.
+CONF_PRUNE_AFTER_WEEKS = "prune_after_weeks"
+DEFAULT_PRUNE_AFTER_WEEKS = 4
+
 REQUIRED_COLUMNS = ("Day", "Zman", "Time")
 # Optional column: once its date/time passes, the row is hidden. Matched
 # loosely, so "Remove By", "RemoveBy" and "remove_by" all work.

@@ -13,9 +13,11 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_NAME,
+    CONF_PRUNE_AFTER_WEEKS,
     CONF_SCAN_INTERVAL,
     CONF_SHEET_URL,
     DEFAULT_NAME,
+    DEFAULT_PRUNE_AFTER_WEEKS,
     DEFAULT_SCAN_INTERVAL_MINUTES,
     DOMAIN,
     MIN_SCAN_INTERVAL_MINUTES,
@@ -82,7 +84,7 @@ class ShulZmanimConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ShulZmanimOptionsFlow(OptionsFlow):
-    """Handle options (poll interval) for an existing entry."""
+    """Handle options (poll interval, sensor pruning) for an existing entry."""
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         # Store privately; assigning to self.config_entry is deprecated in
@@ -103,6 +105,12 @@ class ShulZmanimOptionsFlow(OptionsFlow):
                         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
                     ),
                 ): vol.All(int, vol.Range(min=MIN_SCAN_INTERVAL_MINUTES)),
+                vol.Optional(
+                    CONF_PRUNE_AFTER_WEEKS,
+                    default=self._entry.options.get(
+                        CONF_PRUNE_AFTER_WEEKS, DEFAULT_PRUNE_AFTER_WEEKS
+                    ),
+                ): vol.All(int, vol.Range(min=0, max=520)),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

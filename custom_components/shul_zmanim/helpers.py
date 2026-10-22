@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, tzinfo
+from collections.abc import Iterable, Mapping
+from datetime import date, datetime, tzinfo
 
 _SHEET_ID_RE = re.compile(r"/spreadsheets/d/([a-zA-Z0-9-_]+)")
 _GID_RE = re.compile(r"[#&?]gid=(\d+)")
@@ -80,3 +81,40 @@ def parse_remove_by(value: str, tz: tzinfo) -> datetime | None:
 def normalize_header(name: str) -> str:
     """Header key used to match optional columns loosely ("Remove By" == "remove_by")."""
     return re.sub(r"[\s_\-]", "", (name or "")).lower()
+
+
+def find_prunable_keys(
+    registered: Iterable[str],
+    current: Iterable[str],
+    last_seen: Mapping[str, str],
+    today: date,
+    max_age_days: int,
+) -> tuple[set[str], set[str]]:
+    """Decide which per-item sensors to remove.
+
+    `registered` are the Keys that have an entity in the registry, `current`
+    the Keys in the sheet right now, and `last_seen` maps a Key to the ISO date
+    it was last in the sheet. Returns `(to_prune, to_seed)`:
+
+    - to_prune: Keys absent from the sheet whose last-seen date is at least
+      `max_age_days` old.
+    - to_seed: absent Keys with no usable last-seen date (for example sensors
+      that predate tracking). The caller records today for them, so they get a
+      full grace period instead of being deleted on the first run.
+
+    Keys in the sheet are never returned. `max_age_days <= 0` disables pruning.
+    """
+    if max_age_days <= 0:
+        return set(), set()
+    current = set(current)
+    to_prune: set[str] = set()
+    to_seed: set[str] = set()
+    for key in set(registered) - current:
+        try:
+            seen = date.fromisoformat(last_seen[key])
+        except (KeyError, TypeError, ValueError):
+            to_seed.add(key)
+            continue
+        if (today - seen).days >= max_age_days:
+            to_prune.add(key)
+    return to_prune, to_seed

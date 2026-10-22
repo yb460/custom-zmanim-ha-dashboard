@@ -24,7 +24,11 @@
       "init": {
         "title": "Shul Zmanim Options",
         "data": {
-          "scan_interval": "Poll interval (minutes)"
+          "scan_interval": "Poll interval (minutes)",
+          "prune_after_weeks": "Remove unused item sensors after (weeks, 0 = never)"
+        },
+        "data_description": {
+          "prune_after_weeks": "A sensor created from a sheet Key is deleted once that Key hasn't appeared in the sheet for this many weeks."
         }
       }
     }
